@@ -6,9 +6,11 @@ pub(crate) mod mem_map;
 
 use log::error;
 
-use self::i8080::I8080;
-use self::instruction::{Instruction, Opcode};
-use self::interconnect::{Mmu, Interconnect, Rom};
+use self::{
+    i8080::I8080,
+    instruction::{Instruction, Opcode},
+    interconnect::{Mmu, Interconnect, Rom},
+};
 
 use failure::Error;
 

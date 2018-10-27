@@ -1,5 +1,8 @@
-use crate::instruction::{Instruction, Opcode};
-use crate::interconnect::{Mmu, Interconnect};
+use crate::{
+    instruction::{Instruction, Opcode},
+    interconnect::{Mmu, Interconnect},
+};
+
 use log::info;
 use std::fmt::{self, Display};
 

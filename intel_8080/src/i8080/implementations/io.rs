@@ -2,6 +2,7 @@ use crate::{
     i8080::{error::EmulateError, Result, I8080},
     instruction::{InstructionData, Opcode},
 };
+
 use log::warn;
 
 impl I8080 {

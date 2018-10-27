@@ -1,4 +1,7 @@
-use crate::i8080::Register;
+use crate::{
+    i8080::Register,
+};
+
 use std::fmt::{self, Display};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

@@ -1,4 +1,7 @@
-use crate::i8080::concat_bytes;
+use crate::{
+    i8080::concat_bytes,
+};
+
 use std::fmt::{self, Display};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

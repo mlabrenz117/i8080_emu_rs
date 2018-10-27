@@ -1,4 +1,6 @@
-use crate::mem_map::{VRAM_END, VRAM_START};
+use crate::{
+    mem_map::{VRAM_END, VRAM_START}
+};
 
 pub struct Vram {
     bytes: Box<[u8]>,

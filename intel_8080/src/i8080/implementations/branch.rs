@@ -1,6 +1,8 @@
-use crate::i8080::{concat_bytes, error::EmulateError, Result, I8080};
-use crate::instruction::{InstructionData, Opcode};
-use crate::interconnect::Interconnect;
+use crate::{
+    i8080::{concat_bytes, error::EmulateError, Result, I8080},
+    instruction::{InstructionData, Opcode},
+    interconnect::Interconnect,
+};
 
 impl I8080 {
     pub(crate) fn jmp(&mut self, data: InstructionData) -> Result<()> {

@@ -2,6 +2,7 @@ use crate::{
     i8080::Register,
     instruction::{Instruction, InstructionData, Opcode},
 };
+
 use failure::Fail;
 
 #[derive(Debug, Fail)]
