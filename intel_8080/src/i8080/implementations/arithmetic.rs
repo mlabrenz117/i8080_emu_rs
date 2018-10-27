@@ -1,6 +1,7 @@
 use crate::i8080::*;
 use crate::instruction::{InstructionData, Opcode};
 use crate::interconnect::Interconnect;
+use crate::interconnect::Mmu;
 
 impl I8080 {
     pub(crate) fn inx(&mut self, register: Register) -> Result<()> {

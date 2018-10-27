@@ -1,6 +1,6 @@
 use crate::i8080::*;
 use crate::instruction::{InstructionData, Opcode};
-use crate::interconnect::Interconnect;
+use crate::interconnect::{Mmu, Interconnect};
 
 impl I8080 {
     pub(crate) fn cpi(&mut self, data: InstructionData) -> Result<()> {

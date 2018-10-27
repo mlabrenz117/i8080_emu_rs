@@ -2,7 +2,7 @@ use crate::{
     i8080::error::EmulateError,
     i8080::{concat_bytes, Register, Result, I8080},
     instruction::{InstructionData, Opcode},
-    interconnect::Interconnect,
+    interconnect::{Mmu, Interconnect},
 };
 
 impl I8080 {

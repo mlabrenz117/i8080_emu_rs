@@ -8,7 +8,7 @@ use log::error;
 
 use self::i8080::I8080;
 use self::instruction::{Instruction, Opcode};
-use self::interconnect::{Interconnect, Rom};
+use self::interconnect::{Mmu, Interconnect, Rom};
 
 use failure::Error;
 

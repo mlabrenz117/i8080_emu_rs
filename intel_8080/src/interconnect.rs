@@ -12,6 +12,11 @@ use self::wram::Wram;
 
 use crate::mem_map::*;
 
+pub trait Mmu {
+    fn read_byte(&self, addr: u16) -> u8;
+    fn write_byte(&mut self, addr: u16, value: u8);
+}
+
 pub struct Interconnect {
     rom: Rom,
     wram: Wram,
@@ -32,8 +37,10 @@ impl Interconnect {
     pub fn rom_len(&self) -> usize {
         self.rom.len()
     }
+}
 
-    pub fn read_byte(&self, addr: u16) -> u8 {
+impl Mmu for Interconnect {
+    fn read_byte(&self, addr: u16) -> u8 {
         match addr {
             ROM_START...ROM_END => self.rom.read_byte(addr - ROM_START),
             WRAM_START...WRAM_END => self.wram.read_byte(addr - WRAM_START),
@@ -42,7 +49,7 @@ impl Interconnect {
         }
     }
 
-    pub fn write_byte(&mut self, addr: u16, value: u8) {
+    fn write_byte(&mut self, addr: u16, value: u8) {
         match addr {
             ROM_START...ROM_END => error!("Attempting to write to ROM"),
             WRAM_START...WRAM_END => self.wram.write_byte(addr - WRAM_START, value),
