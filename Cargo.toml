@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "i8080_emu_cli",
+    "intel_8080",
+]
