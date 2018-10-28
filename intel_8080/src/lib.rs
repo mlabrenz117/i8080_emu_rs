@@ -1,6 +1,7 @@
 pub mod i8080;
 pub mod instruction;
 pub mod mmu;
+pub mod io_port;
 
 use log::error;
 
@@ -11,67 +12,71 @@ use self::{
         Mmu, 
         interconnect::{Interconnect, Rom},
     },
+    io_port::{
+        IOPort,
+        basic_io::BasicIO
+    },
 };
 
 use failure::Error;
 
-pub struct Emulator<T: Mmu> {
+pub struct Emulator<T: Mmu, U: IOPort> {
     cpu: I8080,
     mmu: T,
+    pub io: U,
 }
 
-impl Emulator<Interconnect> {
-    pub fn new<U: Into<Rom>>(rom: U) -> Emulator<Interconnect> {
+impl Emulator<Interconnect, BasicIO> {
+    pub fn new<U: Into<Rom>>(rom: U) -> Emulator<Interconnect, BasicIO> {
         Emulator {
             cpu: I8080::new(),
             mmu: Interconnect::new(rom),
+            io: BasicIO::default(),
         }
     }
 }
 
-impl<T: Mmu> Emulator<T> {
-    pub fn with_mmu(mmu: T) -> Emulator<T> {
+impl<T: Mmu, U: IOPort> Emulator<T, U> {
+    pub fn with_mmu(self, mmu: T) -> Emulator<T, U> {
         Emulator {
-            cpu: I8080::new(),
-            mmu: mmu,
+            cpu: self.cpu,
+            mmu,
+            io: self.io,
+        }
+    }
+
+    pub fn with_io(self, io: U) -> Emulator<T, U> {
+        Emulator {
+            cpu: self.cpu,
+            mmu: self.mmu,
+            io,
         }
     }
 
     pub fn step(&mut self) {
-        if let Some(instruction) = self.next_instruction() {
-            if let Err(e) = self
-                .cpu
-                .emulate_instruction(instruction, &mut self.mmu)
-            {
-                error!("{}", e);
-            }
+        if let Err(e) = self.try_step() {
+            error!("{}", e);
         }
     }
 
     pub fn try_step(&mut self) -> Result<(), Error> {
         if let Some(instruction) = self.next_instruction() {
             self.cpu
-                .emulate_instruction(instruction, &mut self.mmu)?;
+                .emulate_instruction(instruction, &mut self.mmu, &mut self.io)?;
         }
         Ok(())
     }
 
     pub fn run(&mut self) {
-        while let Some(instruction) = self.next_instruction() {
-            if let Err(e) = self
-                .cpu
-                .emulate_instruction(instruction, &mut self.mmu)
-            {
-                error!("{}", e);
-                break;
-            }
+        if let Err(e) = self.try_run() {
+            error!("{}", e);
         }
     }
 
     pub fn try_run(&mut self) -> Result<(), Error> {
         while let Some(instruction) = self.next_instruction() {
             self.cpu
-                .emulate_instruction(instruction, &mut self.mmu)?
+                .emulate_instruction(instruction, &mut self.mmu, &mut self.io)?
         }
         Ok(())
     }
@@ -107,11 +112,11 @@ impl<T: Mmu> Emulator<T> {
         &mut self.cpu
     }
 
-    pub fn interconnect(&self) -> &impl Mmu {
+    pub fn mmu(&self) -> &impl Mmu {
         &self.mmu
     }
 
-    pub fn interconnect_mut(&mut self) -> &mut impl Mmu {
+    pub fn mmu_mut(&mut self) -> &mut impl Mmu {
         &mut self.mmu
     }
 }

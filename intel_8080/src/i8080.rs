@@ -1,6 +1,7 @@
 use crate::{
     instruction::{Instruction, Opcode},
     mmu::Mmu,
+    io_port::IOPort,
 };
 
 use log::info;
@@ -53,10 +54,11 @@ impl I8080 {
         }
     }
 
-    pub fn emulate_instruction<T: Mmu>(
+    pub fn emulate_instruction<T: Mmu, U: IOPort>(
         &mut self,
         instruction: Instruction,
         mmu: &mut T,
+        io: &mut U,
     ) -> Result<()> {
         let old_pc = self.pc;
         self.pc += instruction.len();
@@ -89,7 +91,8 @@ impl I8080 {
             ANA(r) => self.ana(r, mmu),
             XRA(r) => self.xra(r, mmu),
             // IO Instructions
-            OUT => self.out(instruction.data()),
+            OUT => self.out(instruction.data(), io),
+            IN => self.input(instruction.data(), io),
             // Branch Instructions
             JMP => self.jmp(instruction.data()),
             JNZ => self.jnz(instruction.data()),
