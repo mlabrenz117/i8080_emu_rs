@@ -1,7 +1,7 @@
 use crate::{
     i8080::*,
     instruction::InstructionData,
-    interconnect::{Mmu, Interconnect},
+    interconnect::Mmu,
 };
 
 impl I8080 {
@@ -25,10 +25,10 @@ impl I8080 {
         Ok(())
     }
 
-    pub(crate) fn dcr(
+    pub(crate) fn dcr<T: Mmu>(
         &mut self,
         register: Register,
-        interconnect: &mut Interconnect,
+            interconnect: &mut T,
     ) -> Result<()> {
         let value = match register {
             Register::SP => {
@@ -52,7 +52,7 @@ impl I8080 {
         Ok(())
     }
 
-    pub(crate) fn add(&mut self, register: Register, interconnect: &Interconnect) -> Result<()> {
+        pub(crate) fn add<T: Mmu>(&mut self, register: Register, interconnect: &T) -> Result<()> {
         let (result, cy) = match register {
             Register::SP => {
                 return Err(EmulateError::UnsupportedRegister {
@@ -109,7 +109,7 @@ impl I8080 {
         Ok(())
     }
 
-    pub(crate) fn sub(&mut self, register: Register, interconnect: &Interconnect) -> Result<()> {
+        pub(crate) fn sub<T: Mmu>(&mut self, register: Register, interconnect: &T) -> Result<()> {
         let (result, cy) = match register {
             Register::SP => {
                 return Err(EmulateError::UnsupportedRegister {

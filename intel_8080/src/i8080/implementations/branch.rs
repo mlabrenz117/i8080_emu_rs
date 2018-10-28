@@ -1,7 +1,7 @@
 use crate::{
     i8080::{concat_bytes, error::EmulateError, Result, I8080},
     instruction::{InstructionData, Opcode},
-    interconnect::Interconnect,
+    interconnect::Mmu,
 };
 
 impl I8080 {
@@ -25,10 +25,10 @@ impl I8080 {
         Ok(())
     }
 
-    pub(crate) fn call(
+    pub(crate) fn call<T: Mmu>(
         &mut self,
         data: InstructionData,
-        interconnect: &mut Interconnect,
+        interconnect: &mut T,
     ) -> Result<()> {
         if let (Some(hi), Some(lo)) = data.tuple() {
             let addr = concat_bytes(hi, lo);
@@ -43,7 +43,7 @@ impl I8080 {
         Ok(())
     }
 
-    pub(crate) fn ret(&mut self, interconnect: &mut Interconnect) -> Result<()> {
+    pub(crate) fn ret<T: Mmu>(&mut self, interconnect: &mut T) -> Result<()> {
         let addr = self.pop_u16(interconnect)?;
         self.pc = addr;
         Ok(())

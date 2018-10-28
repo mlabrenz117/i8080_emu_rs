@@ -1,6 +1,6 @@
 use crate::{
     instruction::{Instruction, Opcode},
-    interconnect::{Mmu, Interconnect},
+    interconnect::Mmu,
 };
 
 use log::info;
@@ -53,10 +53,10 @@ impl I8080 {
         }
     }
 
-    pub fn emulate_instruction(
+    pub fn emulate_instruction<T: Mmu>(
         &mut self,
         instruction: Instruction,
-        ic: &mut Interconnect,
+        ic: &mut T,
     ) -> Result<()> {
         let old_pc = self.pc;
         self.pc += instruction.len();
@@ -170,14 +170,14 @@ impl I8080 {
         self.interrupts_enabled
     }
 
-    fn push_u16(&mut self, value: u16, interconnect: &mut Interconnect) -> Result<()> {
+    fn push_u16<T: Mmu>(&mut self, value: u16, interconnect: &mut T) -> Result<()> {
         let (high, low) = split_bytes(value);
         self.push_u8(high, interconnect)?;
         self.push_u8(low, interconnect)?;
         Ok(())
     }
 
-    fn push_u8(&mut self, value: u8, interconnect: &mut Interconnect) -> Result<()> {
+    fn push_u8<T: Mmu>(&mut self, value: u8, interconnect: &mut T) -> Result<()> {
         let loc = self.sp - 1;
         if loc < 0x2000 {
             return Err(EmulateError::StackOverflow);
@@ -188,14 +188,14 @@ impl I8080 {
         Ok(())
     }
 
-    fn pop_u8(&mut self, interconnect: &Interconnect) -> Result<u8> {
+    fn pop_u8<T: Mmu>(&mut self, interconnect: &T) -> Result<u8> {
         let value = interconnect.read_byte(self.sp);
         self.sp += 1;
         self.register_changed(Register::SP);
         Ok(value)
     }
 
-    fn pop_u16(&mut self, interconnect: &Interconnect) -> Result<u16> {
+    fn pop_u16<T: Mmu>(&mut self, interconnect: &T) -> Result<u16> {
         let low = self.pop_u8(interconnect)?;
         let high = self.pop_u8(interconnect)?;
         Ok(concat_bytes(high, low))

@@ -2,7 +2,7 @@ use crate::{
     i8080::error::EmulateError,
     i8080::{concat_bytes, Register, Result, I8080},
     instruction::{InstructionData, Opcode},
-    interconnect::{Mmu, Interconnect},
+    interconnect::Mmu,
 };
 
 impl I8080 {
@@ -48,7 +48,7 @@ impl I8080 {
     ///
     /// Loads the byte at the memory location given into the accumulator.
     // TODO: WRITE TEST
-    pub(crate) fn lda(&mut self, data: InstructionData, interconnect: &Interconnect) -> Result<()> {
+    pub(crate) fn lda<T: Mmu>(&mut self, data: InstructionData, interconnect: &T) -> Result<()> {
         if let Some(addr) = data.addr() {
             self.set_8bit_register(Register::A, interconnect.read_byte(addr));
         } else {
@@ -67,10 +67,10 @@ impl I8080 {
     ///
     /// Stores the value in the accumulator into memory at the given address.
     // TODO: WRITE TEST
-    pub(crate) fn sta(
+    pub(crate) fn sta<T: Mmu>(
         &mut self,
         data: InstructionData,
-        interconnect: &mut Interconnect,
+        interconnect: &mut T,
     ) -> Result<()> {
         if let Some(addr) = data.addr() {
             interconnect.write_byte(addr, self.a);
@@ -93,7 +93,7 @@ impl I8080 {
     ///
     /// #Errors
     /// Fails if given registers A, C, E, H, L, M, SP.
-    pub(crate) fn ldax(&mut self, register: Register, interconnect: &Interconnect) -> Result<()> {
+    pub(crate) fn ldax<T: Mmu>(&mut self, register: Register, interconnect: &T) -> Result<()> {
         let pair = match register {
             Register::B | Register::D => register.get_pair().unwrap(),
             _r => {
@@ -126,11 +126,11 @@ impl I8080 {
     ///
     /// #Errors
     /// Fails if given register SP.
-    pub(crate) fn mov(
+    pub(crate) fn mov<T: Mmu>(
         &mut self,
         destination: Register,
         source: Register,
-        interconnect: &mut Interconnect,
+        interconnect: &mut T,
     ) -> Result<()> {
         match (destination, source) {
             (Register::SP, _) | (_, Register::SP) => {
@@ -165,11 +165,11 @@ impl I8080 {
     ///
     /// #Errors
     /// Fails if given register SP.
-    pub(crate) fn mvi(
+    pub(crate) fn mvi<T: Mmu>(
         &mut self,
         register: Register,
         data: InstructionData,
-        interconnect: &mut Interconnect,
+        interconnect: &mut T,
     ) -> Result<()> {
         if let (Some(value), None) = data.tuple() {
             match register {
@@ -212,10 +212,10 @@ impl I8080 {
     ///
     /// #Errors
     /// Fails if given registers A, C, E, L, or M
-    pub(crate) fn push(
+    pub(crate) fn push<T: Mmu>(
         &mut self,
         register: Register,
-        interconnect: &mut Interconnect,
+        interconnect: &mut T,
     ) -> Result<()> {
         match (register, register.get_pair()) {
             (_r, Some(r2)) => {
@@ -250,7 +250,7 @@ impl I8080 {
     /// is indicated, then it is loaded into the conditional flags.
     ///
     /// The Stack Pointer is incremented by 2.
-    pub(crate) fn pop(&mut self, register: Register, interconnect: &Interconnect) -> Result<()> {
+    pub(crate) fn pop<T: Mmu>(&mut self, register: Register, interconnect: &T) -> Result<()> {
         use crate::i8080::flags::ConditionalFlags;
         match (register, register.get_pair()) {
             (_r, Some(r2)) => {
@@ -297,7 +297,7 @@ impl I8080 {
 
 #[cfg(test)]
 mod tests {
-    use crate::interconnect::Rom;
+    use crate::interconnect::Mmu;
     use crate::Emulator;
 
     #[test]
@@ -308,7 +308,7 @@ mod tests {
             0x21, 0x11, 0xff, //LXI H, 0xff11
             0x31, 0xbb, 0xaa, //LXI SP, 0xaabb
         ];
-        let mut system = Emulator::new(Rom::from(&bytecode));
+        let mut system = Emulator::new(&bytecode);
         system.run();
         assert_eq!(system.cpu.b, 0xbb);
         assert_eq!(system.cpu.c, 0xcc);

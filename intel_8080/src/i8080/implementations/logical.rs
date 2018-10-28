@@ -1,7 +1,7 @@
 use crate::{
     i8080::*,
     instruction::{InstructionData, Opcode},
-    interconnect::{Mmu, Interconnect},
+    interconnect::Mmu,
 };
 
 impl I8080 {
@@ -34,7 +34,7 @@ impl I8080 {
         Ok(())
     }
 
-    pub(crate) fn ana(&mut self, register: Register, interconnect: &Interconnect) -> Result<()> {
+    pub(crate) fn ana<T: Mmu>(&mut self, register: Register, interconnect: &T) -> Result<()> {
         let value: u8 = match register {
             Register::SP => {
                 return Err(EmulateError::UnsupportedRegister {
@@ -52,7 +52,7 @@ impl I8080 {
         Ok(())
     }
 
-    pub(crate) fn xra(&mut self, register: Register, interconnect: &Interconnect) -> Result<()> {
+    pub(crate) fn xra<T: Mmu>(&mut self, register: Register, interconnect: &T) -> Result<()> {
         let value: u8 = match register {
             Register::SP => {
                 return Err(EmulateError::UnsupportedRegister {
@@ -74,6 +74,8 @@ impl I8080 {
 #[cfg(test)]
 mod tests {
     use crate::Emulator;
+    use crate::interconnect::Mmu;
+
     #[test]
     fn cpi() {
         let bytecode = [

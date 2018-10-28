@@ -1,4 +1,3 @@
-use i8080_emulator::interconnect::Rom;
 use i8080_emulator::Emulator;
 use simplelog::{Config, LevelFilter, SimpleLogger};
 
@@ -11,8 +10,6 @@ fn main() {
     config.level = None;
     SimpleLogger::init(LevelFilter::Info, config).unwrap();
 
-    let rom = Rom::from(&rom());
-
-    let mut emulator = Emulator::new(rom);
+    let mut emulator = Emulator::new(rom());
     emulator.run();
 }

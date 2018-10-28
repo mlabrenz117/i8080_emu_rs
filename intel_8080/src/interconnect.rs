@@ -15,6 +15,7 @@ use crate::mem_map::*;
 pub trait Mmu {
     fn read_byte(&self, addr: u16) -> u8;
     fn write_byte(&mut self, addr: u16, value: u8);
+    fn rom_len(&self) -> usize;
 }
 
 pub struct Interconnect {
@@ -25,17 +26,14 @@ pub struct Interconnect {
 }
 
 impl Interconnect {
-    pub fn new(rom: Rom) -> Interconnect {
+    pub fn new<T: Into<Rom>>(rom: T) -> Interconnect {
+        let rom = rom.into();
         Interconnect {
             rom,
             wram: Wram::new(),
             vram: Vram::new(),
             game_pad: GamePad::new(),
         }
-    }
-
-    pub fn rom_len(&self) -> usize {
-        self.rom.len()
     }
 }
 
@@ -56,5 +54,9 @@ impl Mmu for Interconnect {
             VRAM_START...VRAM_END => self.vram.write_byte(addr - VRAM_START, value),
             _ => panic!("Unrecognized Address: 0x{:04x}", addr),
         }
+    }
+
+    fn rom_len(&self) -> usize {
+        self.rom.len()
     }
 }

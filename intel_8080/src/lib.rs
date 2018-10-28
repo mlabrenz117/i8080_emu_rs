@@ -14,16 +14,25 @@ use self::{
 
 use failure::Error;
 
-pub struct Emulator {
+pub struct Emulator<T: Mmu> {
     cpu: I8080,
-    interconnect: Interconnect,
+    interconnect: T,
 }
 
-impl Emulator {
-    pub fn new<T: Into<Rom>>(rom: T) -> Emulator {
+impl Emulator<Interconnect> {
+    pub fn new<U: Into<Rom>>(rom: U) -> Emulator<Interconnect> {
         Emulator {
             cpu: I8080::new(),
-            interconnect: Interconnect::new(rom.into()),
+            interconnect: Interconnect::new(rom),
+        }
+    }
+}
+
+impl<T: Mmu> Emulator<T> {
+    pub fn with_mmu(mmu: T) -> Emulator<T> {
+        Emulator {
+            cpu: I8080::new(),
+            interconnect: mmu,
         }
     }
 
@@ -97,11 +106,11 @@ impl Emulator {
         &mut self.cpu
     }
 
-    pub fn interconnect(&self) -> &Interconnect {
+    pub fn interconnect(&self) -> &impl Mmu {
         &self.interconnect
     }
 
-    pub fn interconnect_mut(&mut self) -> &mut Interconnect {
+    pub fn interconnect_mut(&mut self) -> &mut impl Mmu {
         &mut self.interconnect
     }
 }
