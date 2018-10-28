@@ -1,13 +1,15 @@
-use crate::mem_map::{WRAM_END, WRAM_START};
+use super::{
+    mem_map::{VRAM_END, VRAM_START}
+};
 
-pub struct Wram {
+pub struct Vram {
     bytes: Box<[u8]>,
 }
 
-impl Wram {
-    pub fn new() -> Wram {
-        const LENGTH: usize = (WRAM_END - WRAM_START + 1) as usize;
-        Wram {
+impl Vram {
+    pub fn new() -> Vram {
+        const LENGTH: usize = (VRAM_END - VRAM_START + 1) as usize;
+        Vram {
             bytes: Box::new([0; LENGTH]),
         }
     }

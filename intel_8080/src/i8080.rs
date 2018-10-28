@@ -1,6 +1,6 @@
 use crate::{
     instruction::{Instruction, Opcode},
-    interconnect::Mmu,
+    mmu::Mmu,
 };
 
 use log::info;
@@ -56,7 +56,7 @@ impl I8080 {
     pub fn emulate_instruction<T: Mmu>(
         &mut self,
         instruction: Instruction,
-        ic: &mut T,
+        mmu: &mut T,
     ) -> Result<()> {
         let old_pc = self.pc;
         self.pc += instruction.len();
@@ -66,35 +66,35 @@ impl I8080 {
             NOP => Ok(()),
             // Data transfer Instructions
             LXI(r) => self.lxi(r, instruction.data()),
-            LDAX(r) => self.ldax(r, ic),
-            LDA => self.lda(instruction.data(), ic),
-            STA => self.sta(instruction.data(), ic),
-            MOV(d, s) => self.mov(d, s, ic),
-            MVI(r) => self.mvi(r, instruction.data(), ic),
+            LDAX(r) => self.ldax(r, mmu),
+            LDA => self.lda(instruction.data(), mmu),
+            STA => self.sta(instruction.data(), mmu),
+            MOV(d, s) => self.mov(d, s, mmu),
+            MVI(r) => self.mvi(r, instruction.data(), mmu),
             XCHG => self.xchg(),
-            PUSH(r) => self.push(r, ic),
-            POP(r) => self.pop(r, ic),
+            PUSH(r) => self.push(r, mmu),
+            POP(r) => self.pop(r, mmu),
             // Arithmetic Instructions
             INX(r) => self.inx(r),
-            DCR(r) => self.dcr(r, ic),
-            ADD(r) => self.add(r, ic),
+            DCR(r) => self.dcr(r, mmu),
+            ADD(r) => self.add(r, mmu),
             ADI => self.adi(instruction.data()),
             DAD(r) => self.dad(r),
-            SUB(r) => self.sub(r, ic),
+            SUB(r) => self.sub(r, mmu),
             SUI => self.sui(instruction.data()),
             RRC => self.rrc(),
             // Logical Instructions
             CPI => self.cpi(instruction.data()),
             ANI => self.ani(instruction.data()),
-            ANA(r) => self.ana(r, ic),
-            XRA(r) => self.xra(r, ic),
+            ANA(r) => self.ana(r, mmu),
+            XRA(r) => self.xra(r, mmu),
             // IO Instructions
             OUT => self.out(instruction.data()),
             // Branch Instructions
             JMP => self.jmp(instruction.data()),
             JNZ => self.jnz(instruction.data()),
-            CALL => self.call(instruction.data(), ic),
-            RET => self.ret(ic),
+            CALL => self.call(instruction.data(), mmu),
+            RET => self.ret(mmu),
             // Special Instructions
             EI => self.ei(),
             _op => return Err(EmulateError::UnimplementedInstruction { instruction }),
@@ -170,34 +170,34 @@ impl I8080 {
         self.interrupts_enabled
     }
 
-    fn push_u16<T: Mmu>(&mut self, value: u16, interconnect: &mut T) -> Result<()> {
+    fn push_u16<T: Mmu>(&mut self, value: u16, mmu: &mut T) -> Result<()> {
         let (high, low) = split_bytes(value);
-        self.push_u8(high, interconnect)?;
-        self.push_u8(low, interconnect)?;
+        self.push_u8(high, mmu)?;
+        self.push_u8(low, mmu)?;
         Ok(())
     }
 
-    fn push_u8<T: Mmu>(&mut self, value: u8, interconnect: &mut T) -> Result<()> {
+    fn push_u8<T: Mmu>(&mut self, value: u8, mmu: &mut T) -> Result<()> {
         let loc = self.sp - 1;
         if loc < 0x2000 {
             return Err(EmulateError::StackOverflow);
         };
-        interconnect.write_byte(loc, value);
+        mmu.write_byte(loc, value);
         self.sp -= 1;
         self.register_changed(Register::SP);
         Ok(())
     }
 
-    fn pop_u8<T: Mmu>(&mut self, interconnect: &T) -> Result<u8> {
-        let value = interconnect.read_byte(self.sp);
+    fn pop_u8<T: Mmu>(&mut self, mmu: &T) -> Result<u8> {
+        let value = mmu.read_byte(self.sp);
         self.sp += 1;
         self.register_changed(Register::SP);
         Ok(value)
     }
 
-    fn pop_u16<T: Mmu>(&mut self, interconnect: &T) -> Result<u16> {
-        let low = self.pop_u8(interconnect)?;
-        let high = self.pop_u8(interconnect)?;
+    fn pop_u16<T: Mmu>(&mut self, mmu: &T) -> Result<u16> {
+        let low = self.pop_u8(mmu)?;
+        let high = self.pop_u8(mmu)?;
         Ok(concat_bytes(high, low))
     }
 

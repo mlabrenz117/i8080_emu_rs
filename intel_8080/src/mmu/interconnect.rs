@@ -1,7 +1,9 @@
 use log::error;
 
-mod game_pad;
+pub mod mem_map;
 pub mod rom;
+
+mod game_pad;
 mod vram;
 mod wram;
 
@@ -10,13 +12,8 @@ pub use self::rom::Rom;
 use self::vram::Vram;
 use self::wram::Wram;
 
-use crate::mem_map::*;
-
-pub trait Mmu {
-    fn read_byte(&self, addr: u16) -> u8;
-    fn write_byte(&mut self, addr: u16, value: u8);
-    fn rom_len(&self) -> usize;
-}
+use super::Mmu;
+use self::mem_map::*;
 
 pub struct Interconnect {
     rom: Rom,

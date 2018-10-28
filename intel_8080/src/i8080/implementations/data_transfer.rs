@@ -2,7 +2,7 @@ use crate::{
     i8080::error::EmulateError,
     i8080::{concat_bytes, Register, Result, I8080},
     instruction::{InstructionData, Opcode},
-    interconnect::Mmu,
+    mmu::Mmu,
 };
 
 impl I8080 {
@@ -297,7 +297,7 @@ impl I8080 {
 
 #[cfg(test)]
 mod tests {
-    use crate::interconnect::Mmu;
+    use crate::mmu::Mmu;
     use crate::Emulator;
 
     #[test]

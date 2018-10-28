@@ -1,7 +1,7 @@
 use crate::{
     i8080::*,
     instruction::{InstructionData, Opcode},
-    interconnect::Mmu,
+    mmu::Mmu,
 };
 
 impl I8080 {
@@ -74,7 +74,7 @@ impl I8080 {
 #[cfg(test)]
 mod tests {
     use crate::Emulator;
-    use crate::interconnect::Mmu;
+    use crate::mmu::Mmu;
 
     #[test]
     fn cpi() {

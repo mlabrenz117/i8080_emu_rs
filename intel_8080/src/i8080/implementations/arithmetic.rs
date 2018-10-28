@@ -1,7 +1,7 @@
 use crate::{
     i8080::*,
     instruction::InstructionData,
-    interconnect::Mmu,
+    mmu::Mmu,
 };
 
 impl I8080 {

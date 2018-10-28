@@ -1,15 +1,16 @@
 pub mod i8080;
 pub mod instruction;
-pub mod interconnect;
-
-pub(crate) mod mem_map;
+pub mod mmu;
 
 use log::error;
 
 use self::{
     i8080::I8080,
     instruction::{Instruction, Opcode},
-    interconnect::{Mmu, Interconnect, Rom},
+    mmu::{
+        Mmu, 
+        interconnect::{Interconnect, Rom},
+    },
 };
 
 use failure::Error;
