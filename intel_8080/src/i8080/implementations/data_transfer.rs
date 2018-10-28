@@ -329,8 +329,8 @@ mod tests {
         system.cpu.b = 0x20;
         system.cpu.d = 0x20;
         system.cpu.e = 0x01;
-        system.interconnect.write_byte(0x2000, 0xaa);
-        system.interconnect.write_byte(0x2001, 0xbb);
+        system.mmu.write_byte(0x2000, 0xaa);
+        system.mmu.write_byte(0x2001, 0xbb);
         system.step();
         assert_eq!(system.cpu.a, 0xaa);
         system.step();
@@ -348,13 +348,13 @@ mod tests {
         system.cpu.d = 0xbd;
         system.cpu.a = 0xaa;
         system.cpu.h = 0x20;
-        system.interconnect.write_byte(0x2000, 0xcc);
+        system.mmu.write_byte(0x2000, 0xcc);
         system.step();
         assert_eq!(system.cpu.b, 0xbd);
         system.step();
         assert_eq!(system.cpu.c, 0xcc);
         system.step();
-        assert_eq!(system.interconnect.read_byte(0x2000), 0xaa);
+        assert_eq!(system.mmu.read_byte(0x2000), 0xaa);
     }
 
     #[test]
@@ -366,7 +366,7 @@ mod tests {
         let mut system = Emulator::new(&bytecode);
         system.run();
         assert_eq!(system.cpu.h, 0x20);
-        assert_eq!(system.interconnect.read_byte(0x2000), 0xff);
+        assert_eq!(system.mmu.read_byte(0x2000), 0xff);
     }
 
     #[test]
@@ -384,10 +384,10 @@ mod tests {
         system.cpu.flags.z = true;
         system.cpu.flags.p = true;
         system.run();
-        assert_eq!(system.interconnect.read_byte(0x2400 - 1), 0x8f);
-        assert_eq!(system.interconnect.read_byte(0x2400 - 2), 0x9d);
-        assert_eq!(system.interconnect.read_byte(0x2400 - 3), 0x1f);
-        assert_eq!(system.interconnect.read_byte(0x2400 - 4), 0x47);
+        assert_eq!(system.mmu.read_byte(0x2400 - 1), 0x8f);
+        assert_eq!(system.mmu.read_byte(0x2400 - 2), 0x9d);
+        assert_eq!(system.mmu.read_byte(0x2400 - 3), 0x1f);
+        assert_eq!(system.mmu.read_byte(0x2400 - 4), 0x47);
         assert_eq!(system.cpu.sp, 0x2400 - 4);
     }
 
