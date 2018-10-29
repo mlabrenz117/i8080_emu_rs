@@ -1,11 +1,11 @@
 use crate::{
     i8080::{error::EmulateError, Result, I8080, Register},
     instruction::{InstructionData, Opcode},
-    io_port::IOPort,
+    io::IO,
 };
 
 impl I8080 {
-    pub(crate) fn out<U: IOPort>(&mut self, data: InstructionData, io: &mut U) -> Result<()> {
+    pub(crate) fn out<U: IO>(&mut self, data: InstructionData, io: &mut U) -> Result<()> {
         if let Some(port) = data.first() {
             io.write_port(port, self.a);
         } else {
@@ -17,7 +17,7 @@ impl I8080 {
         Ok(())
     }
 
-    pub(crate) fn input<U: IOPort>(&mut self, data: InstructionData, io: &mut U) -> Result<()> {
+    pub(crate) fn input<U: IO>(&mut self, data: InstructionData, io: &mut U) -> Result<()> {
         if let Some(port) = data.first() {
             self.set_8bit_register(Register::A, io.read_port(port));
         } else {

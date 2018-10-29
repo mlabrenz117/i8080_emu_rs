@@ -1,7 +1,7 @@
 use crate::{
     instruction::{Instruction, Opcode},
     mmu::Mmu,
-    io_port::IOPort,
+    io::IO,
 };
 
 use log::info;
@@ -54,7 +54,7 @@ impl I8080 {
         }
     }
 
-    pub fn emulate_instruction<T: Mmu, U: IOPort>(
+    pub fn emulate_instruction<T: Mmu, U: IO>(
         &mut self,
         instruction: Instruction,
         mmu: &mut T,

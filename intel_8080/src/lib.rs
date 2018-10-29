@@ -1,7 +1,7 @@
 pub mod i8080;
 pub mod instruction;
 pub mod mmu;
-pub mod io_port;
+pub mod io;
 
 use log::error;
 
@@ -12,15 +12,15 @@ use self::{
         Mmu, 
         interconnect::{Interconnect, Rom},
     },
-    io_port::{
-        IOPort,
+    io::{
+        IO,
         basic_io::BasicIO
     },
 };
 
 use failure::Error;
 
-pub struct Emulator<T: Mmu, U: IOPort> {
+pub struct Emulator<T: Mmu, U: IO> {
     cpu: I8080,
     mmu: T,
     pub io: U,
@@ -36,7 +36,7 @@ impl Emulator<Interconnect, BasicIO> {
     }
 }
 
-impl<T: Mmu, U: IOPort> Emulator<T, U> {
+impl<T: Mmu, U: IO> Emulator<T, U> {
     pub fn with_mmu(self, mmu: T) -> Emulator<T, U> {
         Emulator {
             cpu: self.cpu,
