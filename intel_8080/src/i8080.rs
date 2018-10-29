@@ -1,7 +1,7 @@
 use crate::{
     instruction::{Instruction, Opcode},
-    mmu::Mmu,
     io::IO,
+    mmu::Mmu,
 };
 
 use log::info;
@@ -78,6 +78,7 @@ impl I8080 {
             POP(r) => self.pop(r, mmu),
             // Arithmetic Instructions
             INX(r) => self.inx(r),
+            DCX(r) => self.dcx(r),
             INR(r) => self.inr(r, mmu),
             DCR(r) => self.dcr(r, mmu),
             ADD(r) => self.add(r, mmu),

@@ -16,8 +16,10 @@ fn it_works() {
     bytecode[0x59e] = 0x05;
 
     let mut emulator = Emulator::new(bytecode);
-    if let Err(e) = emulator.try_run() {
-        panic!("{}", e)
+    for _ in 0..1000 {
+        if let Err(e) = emulator.try_step() {
+            panic!("{}", e)
+        }
     }
 
     //assert_eq!(emulator.cpu().m(), 0x11);
