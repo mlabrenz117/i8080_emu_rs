@@ -78,6 +78,7 @@ impl I8080 {
             POP(r) => self.pop(r, mmu),
             // Arithmetic Instructions
             INX(r) => self.inx(r),
+            INR(r) => self.inr(r, mmu),
             DCR(r) => self.dcr(r, mmu),
             ADD(r) => self.add(r, mmu),
             ADI => self.adi(instruction.data()),
@@ -95,7 +96,9 @@ impl I8080 {
             IN => self.input(instruction.data(), io),
             // Branch Instructions
             JMP => self.jmp(instruction.data()),
+            JZ => self.jz(instruction.data()),
             JNZ => self.jnz(instruction.data()),
+            JNC => self.jnc(instruction.data()),
             CALL => self.call(instruction.data(), mmu),
             RET => self.ret(mmu),
             // Special Instructions
@@ -182,9 +185,9 @@ impl I8080 {
 
     fn push_u8<T: Mmu>(&mut self, value: u8, mmu: &mut T) -> Result<()> {
         let loc = self.sp - 1;
-        if loc < 0x2000 {
-            return Err(EmulateError::StackOverflow);
-        };
+        //if loc < 0x2000 {
+        //    return Err(EmulateError::StackOverflow);
+        //};
         mmu.write_byte(loc, value);
         self.sp -= 1;
         self.register_changed(Register::SP);

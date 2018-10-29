@@ -25,10 +25,37 @@ impl I8080 {
         Ok(())
     }
 
+    pub(crate) fn inr<T: Mmu>(
+        &mut self,
+        register: Register,
+        interconnect: &mut T,
+    ) -> Result<()> {
+        let value = match register {
+            Register::SP => {
+                return Err(EmulateError::UnsupportedRegister {
+                    opcode: Opcode::INR(register),
+                    register,
+                })
+            }
+            Register::M => {
+                let v = interconnect.read_byte(self.m()) + 1;
+                interconnect.write_byte(self.m(), v);
+                v
+            }
+            _r => {
+                let v = self.get_8bit_register(_r).unwrap() + 1;
+                self.set_8bit_register(_r, v);
+                v
+            }
+        };
+        self.flags.set_non_carry_flags(value);
+        Ok(())
+    }
+
     pub(crate) fn dcr<T: Mmu>(
         &mut self,
         register: Register,
-            interconnect: &mut T,
+        interconnect: &mut T,
     ) -> Result<()> {
         let value = match register {
             Register::SP => {

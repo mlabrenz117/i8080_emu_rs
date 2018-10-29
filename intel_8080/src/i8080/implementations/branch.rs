@@ -25,6 +25,20 @@ impl I8080 {
         Ok(())
     }
 
+    pub(crate) fn jz(&mut self, data: InstructionData) -> Result<()> {
+        if self.flags.z {
+            self.jmp(data)?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn jnc(&mut self, data: InstructionData) -> Result<()> {
+        if self.flags.cy {
+            self.jmp(data)?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn call<T: Mmu>(
         &mut self,
         data: InstructionData,
