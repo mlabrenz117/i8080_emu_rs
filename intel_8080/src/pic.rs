@@ -10,7 +10,14 @@ impl InterruptController {
         self.interrupt = Some(instruction);
     }
 
-    pub fn interrupt(&self) -> Option<Instruction> {
-        self.interrupt
+    pub fn consume_interrupt(&mut self) -> Option<Instruction> {
+        match self.interrupt {
+            Some(_) => {
+                let ret = self.interrupt;
+                self.interrupt = None;
+                ret
+            }
+            None => None,
+        }
     }
 }

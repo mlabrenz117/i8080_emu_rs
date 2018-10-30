@@ -1,5 +1,6 @@
 use crate::{
     instruction::{Instruction, Opcode},
+    interconnect::Interconnect,
     io::IO,
     mmu::Mmu,
 };
@@ -57,12 +58,20 @@ impl I8080 {
     pub fn emulate_instruction<T: Mmu, U: IO>(
         &mut self,
         instruction: Instruction,
-        mmu: &mut T,
-        io: &mut U,
+        interconnect: &mut Interconnect<T, U>,
+        is_interrupt: bool,
     ) -> Result<()> {
-        let old_pc = self.pc;
-        self.pc += instruction.len();
         use self::Opcode::*;
+
+        let mmu = &mut interconnect.mmu;
+        let io = &mut interconnect.io;
+
+        let old_pc = self.pc;
+        match is_interrupt {
+            true => self.interrupts_enabled = false,
+            false => self.pc += instruction.len(),
+        }
+
         self.reset_rc();
         let r = match instruction.opcode() {
             NOP => Ok(()),

@@ -1,64 +1,37 @@
 pub mod i8080;
 pub mod instruction;
+pub mod interconnect;
+pub mod io;
 pub mod mmu;
 pub mod pic;
-pub mod io;
 
 use log::error;
 
 use self::{
     i8080::I8080,
     instruction::{Instruction, Opcode},
-    pic::InterruptController,
-    mmu::{
-        Mmu, 
-        interconnect::{Interconnect, Rom},
-    },
-    io::{
-        IO,
-        basic_io::BasicIO
-    },
+    interconnect::Interconnect,
+    io::{basic_io::BasicIO, IO},
+    mmu::{basic_mmu::BasicMMU, Mmu, Rom},
 };
 
 use failure::Error;
 
 pub struct Emulator<T: Mmu, U: IO> {
     cpu: I8080,
-    mmu: T,
-    pub io: U,
-    pub interrupt_controller: InterruptController,
+    pub interconnect: Interconnect<T, U>,
 }
 
-impl Emulator<Interconnect, BasicIO> {
-    pub fn new<U: Into<Rom>>(rom: U) -> Emulator<Interconnect, BasicIO> {
+impl Emulator<BasicMMU, BasicIO> {
+    pub fn new<U: Into<Rom>>(rom: U) -> Emulator<BasicMMU, BasicIO> {
         Emulator {
             cpu: I8080::new(),
-            mmu: Interconnect::new(rom),
-            io: BasicIO::default(),
-            interrupt_controller: InterruptController::default(),
+            interconnect: Interconnect::new(rom),
         }
     }
 }
 
 impl<T: Mmu, U: IO> Emulator<T, U> {
-    pub fn with_mmu(self, mmu: T) -> Emulator<T, U> {
-        Emulator {
-            cpu: self.cpu,
-            mmu,
-            io: self.io,
-            interrupt_controller: self.interrupt_controller,
-        }
-    }
-
-    pub fn with_io(self, io: U) -> Emulator<T, U> {
-        Emulator {
-            cpu: self.cpu,
-            mmu: self.mmu,
-            io,
-            interrupt_controller: self.interrupt_controller,
-        }
-    }
-
     pub fn step(&mut self) {
         if let Err(e) = self.try_step() {
             error!("{}", e);
@@ -66,9 +39,15 @@ impl<T: Mmu, U: IO> Emulator<T, U> {
     }
 
     pub fn try_step(&mut self) -> Result<(), Error> {
+        if self.cpu.interrupts_enabled() {
+            if let Some(instruction) = self.interconnect.interrupt_controller.consume_interrupt() {
+                self.cpu
+                    .emulate_instruction(instruction, &mut self.interconnect, true)?;
+            }
+        }
         if let Some(instruction) = self.next_instruction() {
             self.cpu
-                .emulate_instruction(instruction, &mut self.mmu, &mut self.io)?;
+                .emulate_instruction(instruction, &mut self.interconnect, false)?;
         }
         Ok(())
     }
@@ -80,27 +59,33 @@ impl<T: Mmu, U: IO> Emulator<T, U> {
     }
 
     pub fn try_run(&mut self) -> Result<(), Error> {
+        if self.cpu.interrupts_enabled() {
+            if let Some(instruction) = self.interconnect.interrupt_controller.consume_interrupt() {
+                self.cpu
+                    .emulate_instruction(instruction, &mut self.interconnect, true)?;
+            }
+        }
         while let Some(instruction) = self.next_instruction() {
             self.cpu
-                .emulate_instruction(instruction, &mut self.mmu, &mut self.io)?
+                .emulate_instruction(instruction, &mut self.interconnect, false)?
         }
         Ok(())
     }
 
     fn next_instruction(&self) -> Option<Instruction> {
         use self::instruction::opcode::OpcodeSize;
-        if (self.cpu.pc() as usize) >= self.mmu.rom_len() {
+        if (self.cpu.pc() as usize) >= self.mmu().rom_len() {
             None
         } else {
-            let opcode = Opcode::from(self.mmu.read_byte(self.cpu.pc()));
+            let opcode = Opcode::from(self.mmu().read_byte(self.cpu.pc()));
             let instruction = match opcode.size() {
                 OpcodeSize::Binary => {
-                    let data = self.mmu.read_byte(self.cpu.pc() + 1);
+                    let data = self.mmu().read_byte(self.cpu.pc() + 1);
                     Instruction::new_binary(opcode, data).unwrap()
                 }
                 OpcodeSize::Trinary => {
-                    let data_low = self.mmu.read_byte(self.cpu.pc() + 1) as u16;
-                    let data_high = self.mmu.read_byte(self.cpu.pc() + 2) as u16;
+                    let data_low = self.mmu().read_byte(self.cpu.pc() + 1) as u16;
+                    let data_high = self.mmu().read_byte(self.cpu.pc() + 2) as u16;
                     let addr = (data_high << 8) | data_low;
                     Instruction::new_trinary(opcode, addr).unwrap()
                 }
@@ -119,10 +104,10 @@ impl<T: Mmu, U: IO> Emulator<T, U> {
     }
 
     pub fn mmu(&self) -> &impl Mmu {
-        &self.mmu
+        &self.interconnect.mmu
     }
 
     pub fn mmu_mut(&mut self) -> &mut impl Mmu {
-        &mut self.mmu
+        &mut self.interconnect.mmu
     }
 }

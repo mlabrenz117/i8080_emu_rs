@@ -214,13 +214,13 @@ mod tests {
             0x3c, // INR A
         ];
         let mut system = Emulator::new(&bytecode);
-        system.mmu.write_byte(0x2bff, 0x15);
+        system.mmu_mut().write_byte(0x2bff, 0x15);
         system.cpu.a = 0x00;
         system.cpu.b = 0xff;
         system.cpu.set_m(0x2bff);
         system.run();
         assert_eq!(system.cpu.b, 0x00);
-        assert_eq!(system.mmu.read_byte(0x2bff), 0x16);
+        assert_eq!(system.mmu().read_byte(0x2bff), 0x16);
         assert_eq!(system.cpu.a, 0x01);
     }
 
@@ -232,13 +232,13 @@ mod tests {
             0x3d, // DCR A
         ];
         let mut system = Emulator::new(&bytecode);
-        system.mmu.write_byte(0x2000, 0x15);
+        system.mmu_mut().write_byte(0x2000, 0x15);
         system.cpu.a = 0x00;
         system.cpu.b = 0xff;
         system.cpu.set_m(0x2000);
         system.run();
         assert_eq!(system.cpu.b, 0xfe);
-        assert_eq!(system.mmu.read_byte(0x2000), 0x14);
+        assert_eq!(system.mmu().read_byte(0x2000), 0x14);
         assert_eq!(system.cpu.a, 0xff);
     }
 

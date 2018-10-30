@@ -73,8 +73,8 @@ impl I8080 {
 
 #[cfg(test)]
 mod tests {
-    use crate::Emulator;
     use crate::mmu::Mmu;
+    use crate::Emulator;
 
     #[test]
     fn cpi() {
@@ -129,7 +129,7 @@ mod tests {
         system.cpu.a = 0x0a;
         system.cpu.h = 0x20;
         system.cpu.l = 0xc5;
-        system.mmu.write_byte(0x20c5, 0xd4);
+        system.mmu_mut().write_byte(0x20c5, 0xd4);
         system.step();
         assert_eq!(system.cpu.a, 0x00);
         system.cpu.a = 0xff;
@@ -150,7 +150,7 @@ mod tests {
         system.cpu.a = 0x0a;
         system.cpu.h = 0x20;
         system.cpu.l = 0xc5;
-        system.mmu.write_byte(0x20c5, 0xd4);
+        system.mmu_mut().write_byte(0x20c5, 0xd4);
         system.step();
         assert_eq!(system.cpu.a, 0xcf);
         system.step();

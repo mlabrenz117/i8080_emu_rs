@@ -1,31 +1,29 @@
 use log::error;
 
 pub mod mem_map;
-pub mod rom;
 
 mod game_pad;
 mod vram;
 mod wram;
 
 use self::game_pad::GamePad;
-pub use self::rom::Rom;
 use self::vram::Vram;
 use self::wram::Wram;
 
-use super::Mmu;
 use self::mem_map::*;
+use super::{Mmu, Rom};
 
-pub struct Interconnect {
+pub struct BasicMMU {
     rom: Rom,
     wram: Wram,
     vram: Vram,
     game_pad: GamePad,
 }
 
-impl Interconnect {
-    pub fn new<T: Into<Rom>>(rom: T) -> Interconnect {
+impl BasicMMU {
+    pub fn new<T: Into<Rom>>(rom: T) -> BasicMMU {
         let rom = rom.into();
-        Interconnect {
+        BasicMMU {
             rom,
             wram: Wram::new(),
             vram: Vram::new(),
@@ -34,7 +32,7 @@ impl Interconnect {
     }
 }
 
-impl Mmu for Interconnect {
+impl Mmu for BasicMMU {
     fn read_byte(&self, addr: u16) -> u8 {
         match addr {
             ROM_START...ROM_END => self.rom.read_byte(addr - ROM_START),
