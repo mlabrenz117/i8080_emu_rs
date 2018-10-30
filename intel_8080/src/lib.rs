@@ -1,6 +1,7 @@
 pub mod i8080;
 pub mod instruction;
 pub mod mmu;
+pub mod pic;
 pub mod io;
 
 use log::error;
@@ -8,6 +9,7 @@ use log::error;
 use self::{
     i8080::I8080,
     instruction::{Instruction, Opcode},
+    pic::InterruptController,
     mmu::{
         Mmu, 
         interconnect::{Interconnect, Rom},
@@ -24,6 +26,7 @@ pub struct Emulator<T: Mmu, U: IO> {
     cpu: I8080,
     mmu: T,
     pub io: U,
+    pub interrupt_controller: InterruptController,
 }
 
 impl Emulator<Interconnect, BasicIO> {
@@ -32,6 +35,7 @@ impl Emulator<Interconnect, BasicIO> {
             cpu: I8080::new(),
             mmu: Interconnect::new(rom),
             io: BasicIO::default(),
+            interrupt_controller: InterruptController::default(),
         }
     }
 }
@@ -42,6 +46,7 @@ impl<T: Mmu, U: IO> Emulator<T, U> {
             cpu: self.cpu,
             mmu,
             io: self.io,
+            interrupt_controller: self.interrupt_controller,
         }
     }
 
@@ -50,6 +55,7 @@ impl<T: Mmu, U: IO> Emulator<T, U> {
             cpu: self.cpu,
             mmu: self.mmu,
             io,
+            interrupt_controller: self.interrupt_controller,
         }
     }
 
