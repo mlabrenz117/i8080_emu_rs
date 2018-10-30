@@ -1,21 +1,17 @@
-use crate::{
-    i8080::*,
-    instruction::InstructionData,
-    mmu::Mmu,
-};
+use crate::{i8080::*, instruction::InstructionData, mmu::Mmu};
 
 impl I8080 {
     pub(crate) fn inx(&mut self, register: Register) -> Result<()> {
         if let Some(r2) = register.get_pair() {
             let low = self.get_8bit_register(r2).unwrap();
             let high = self.get_8bit_register(register).unwrap();
-            let mut value = concat_bytes(high, low);
-            value += 1;
+            let value = concat_bytes(high, low);
+            let value = value.wrapping_add(1);
             let (high, low) = split_bytes(value);
             self.set_8bit_register(r2, low);
             self.set_8bit_register(register, high);
         } else if register == Register::SP {
-            self.sp += 1;
+            self.sp = self.sp.wrapping_add(1);
         } else {
             return Err(EmulateError::UnsupportedRegister {
                 opcode: Opcode::INX(register),
@@ -25,11 +21,27 @@ impl I8080 {
         Ok(())
     }
 
-    pub(crate) fn inr<T: Mmu>(
-        &mut self,
-        register: Register,
-        interconnect: &mut T,
-    ) -> Result<()> {
+    pub(crate) fn dcx(&mut self, register: Register) -> Result<()> {
+        if let Some(r2) = register.get_pair() {
+            let low = self.get_8bit_register(r2).unwrap();
+            let high = self.get_8bit_register(register).unwrap();
+            let value = concat_bytes(high, low);
+            let value = value.wrapping_sub(1);
+            let (high, low) = split_bytes(value);
+            self.set_8bit_register(r2, low);
+            self.set_8bit_register(register, high);
+        } else if register == Register::SP {
+            self.sp = self.sp.wrapping_sub(1);
+        } else {
+            return Err(EmulateError::UnsupportedRegister {
+                opcode: Opcode::DCX(register),
+                register,
+            });
+        }
+        Ok(())
+    }
+
+    pub(crate) fn inr<T: Mmu>(&mut self, register: Register, interconnect: &mut T) -> Result<()> {
         let value = match register {
             Register::SP => {
                 return Err(EmulateError::UnsupportedRegister {
@@ -38,12 +50,12 @@ impl I8080 {
                 })
             }
             Register::M => {
-                let v = interconnect.read_byte(self.m()) + 1;
+                let v = interconnect.read_byte(self.m()).wrapping_add(1);
                 interconnect.write_byte(self.m(), v);
                 v
             }
             _r => {
-                let v = self.get_8bit_register(_r).unwrap() + 1;
+                let v = self.get_8bit_register(_r).unwrap().wrapping_add(1);
                 self.set_8bit_register(_r, v);
                 v
             }
@@ -52,11 +64,7 @@ impl I8080 {
         Ok(())
     }
 
-    pub(crate) fn dcr<T: Mmu>(
-        &mut self,
-        register: Register,
-        interconnect: &mut T,
-    ) -> Result<()> {
+    pub(crate) fn dcr<T: Mmu>(&mut self, register: Register, interconnect: &mut T) -> Result<()> {
         let value = match register {
             Register::SP => {
                 return Err(EmulateError::UnsupportedRegister {
@@ -79,7 +87,7 @@ impl I8080 {
         Ok(())
     }
 
-        pub(crate) fn add<T: Mmu>(&mut self, register: Register, interconnect: &T) -> Result<()> {
+    pub(crate) fn add<T: Mmu>(&mut self, register: Register, interconnect: &T) -> Result<()> {
         let (result, cy) = match register {
             Register::SP => {
                 return Err(EmulateError::UnsupportedRegister {
@@ -136,7 +144,7 @@ impl I8080 {
         Ok(())
     }
 
-        pub(crate) fn sub<T: Mmu>(&mut self, register: Register, interconnect: &T) -> Result<()> {
+    pub(crate) fn sub<T: Mmu>(&mut self, register: Register, interconnect: &T) -> Result<()> {
         let (result, cy) = match register {
             Register::SP => {
                 return Err(EmulateError::UnsupportedRegister {
@@ -196,6 +204,94 @@ mod tests {
         let m: u8 = 0x00;
         let s: u8 = 0x01;
         assert_eq!(m.complement_sub(s), (u8::MAX, true));
+    }
+
+    #[test]
+    fn inr() {
+        let bytecode = [
+            0x04, // INR B
+            0x34, // INR M
+            0x3c, // INR A
+        ];
+        let mut system = Emulator::new(&bytecode);
+        system.mmu.write_byte(0x2bff, 0x15);
+        system.cpu.a = 0x00;
+        system.cpu.b = 0xff;
+        system.cpu.set_m(0x2bff);
+        system.run();
+        assert_eq!(system.cpu.b, 0x00);
+        assert_eq!(system.mmu.read_byte(0x2bff), 0x16);
+        assert_eq!(system.cpu.a, 0x01);
+    }
+
+    #[test]
+    fn dcr() {
+        let bytecode = [
+            0x05, // DCR B
+            0x35, // DCR M
+            0x3d, // DCR A
+        ];
+        let mut system = Emulator::new(&bytecode);
+        system.mmu.write_byte(0x2000, 0x15);
+        system.cpu.a = 0x00;
+        system.cpu.b = 0xff;
+        system.cpu.set_m(0x2000);
+        system.run();
+        assert_eq!(system.cpu.b, 0xfe);
+        assert_eq!(system.mmu.read_byte(0x2000), 0x14);
+        assert_eq!(system.cpu.a, 0xff);
+    }
+
+    #[test]
+    fn inx() {
+        let bytecode = [
+            0x03, // INX B
+            0x13, // INX D
+            0x23, // INX H
+            0x33, // INX SP
+        ];
+        let mut system = Emulator::new(&bytecode);
+        system.cpu.b = 0x20;
+        system.cpu.c = 0x00;
+        system.cpu.d = 0xff;
+        system.cpu.e = 0xff;
+        system.cpu.h = 0x24;
+        system.cpu.l = 0xff;
+        system.cpu.sp = 0x25ff;
+        system.run();
+        assert_eq!(system.cpu.b, 0x20);
+        assert_eq!(system.cpu.c, 0x01);
+        assert_eq!(system.cpu.d, 0x00);
+        assert_eq!(system.cpu.e, 0x00);
+        assert_eq!(system.cpu.h, 0x25);
+        assert_eq!(system.cpu.l, 0x00);
+        assert_eq!(system.cpu.sp, 0x2600);
+    }
+
+    #[test]
+    fn dcx() {
+        let bytecode = [
+            0x0b, // DCX B
+            0x1b, // DCX D
+            0x2b, // DCX H
+            0x3b, // DCX SP
+        ];
+        let mut system = Emulator::new(&bytecode);
+        system.cpu.b = 0x20;
+        system.cpu.c = 0x00;
+        system.cpu.d = 0x00;
+        system.cpu.e = 0x00;
+        system.cpu.h = 0x00;
+        system.cpu.l = 0x01;
+        system.cpu.sp = 0x0f00;
+        system.run();
+        assert_eq!(system.cpu.b, 0x1f);
+        assert_eq!(system.cpu.c, 0xff);
+        assert_eq!(system.cpu.d, 0xff);
+        assert_eq!(system.cpu.e, 0xff);
+        assert_eq!(system.cpu.h, 0x00);
+        assert_eq!(system.cpu.l, 0x00);
+        assert_eq!(system.cpu.sp, 0x0eff);
     }
 
     #[test]
