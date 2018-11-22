@@ -12,6 +12,7 @@ mod flags;
 pub use self::flags::ConditionalFlags;
 
 mod register;
+use self::register::Reg;
 pub use self::register::Register;
 
 mod error;
@@ -23,34 +24,32 @@ type Result<T> = std::result::Result<T, EmulateError>;
 mod implementations;
 
 pub struct I8080 {
-    a: u8,
-    b: u8,
-    c: u8,
-    d: u8,
-    e: u8,
-    h: u8,
-    l: u8,
-    sp: u16,
-    pc: u16,
+    a: Reg<u8>,
+    b: Reg<u8>,
+    c: Reg<u8>,
+    d: Reg<u8>,
+    e: Reg<u8>,
+    h: Reg<u8>,
+    l: Reg<u8>,
+    sp: Reg<u16>,
+    pc: Reg<u16>,
     flags: ConditionalFlags,
-    rc: [bool; 8],
     interrupts_enabled: bool,
 }
 
 impl I8080 {
     pub fn new() -> I8080 {
         I8080 {
-            a: 0,
-            b: 0,
-            c: 0,
-            d: 0,
-            e: 0,
-            h: 0,
-            l: 0,
-            sp: 0,
-            pc: 0,
+            a: Reg::new(0),
+            b: Reg::new(0),
+            c: Reg::new(0),
+            d: Reg::new(0),
+            e: Reg::new(0),
+            h: Reg::new(0),
+            l: Reg::new(0),
+            sp: Reg::new(0),
+            pc: Reg::new(0),
             flags: ConditionalFlags::new(),
-            rc: [false; 8],
             interrupts_enabled: true,
         }
     }
@@ -123,32 +122,31 @@ impl I8080 {
     }
 
     fn set_8bit_register(&mut self, register: Register, value: u8) {
-        self.register_changed(register);
         match register {
-            Register::A => self.a = value,
-            Register::B => self.b = value,
-            Register::C => self.c = value,
-            Register::D => self.d = value,
-            Register::E => self.e = value,
-            Register::H => self.h = value,
-            Register::L => self.l = value,
+            Register::A => self.a.set(value),
+            Register::B => self.b.set(value),
+            Register::C => self.c.set(value),
+            Register::D => self.d.set(value),
+            Register::E => self.e.set(value),
+            Register::H => self.h.set(value),
+            Register::L => self.l.set(value),
             Register::M => {
-                self.l = value;
-                self.h = 0
+                self.l.set(value);
+                self.h.set(0);
             }
-            Register::SP => self.sp = value as u16,
+            Register::SP => self.sp.set(value as u16),
         };
     }
 
     pub fn get_8bit_register(&self, register: Register) -> Result<u8> {
         match register {
-            Register::A => Ok(self.a),
-            Register::B => Ok(self.b),
-            Register::C => Ok(self.c),
-            Register::D => Ok(self.d),
-            Register::E => Ok(self.e),
-            Register::H => Ok(self.h),
-            Register::L => Ok(self.l),
+            Register::A => Ok(self.a.get()),
+            Register::B => Ok(self.b.get()),
+            Register::C => Ok(self.c.get()),
+            Register::D => Ok(self.d.get()),
+            Register::E => Ok(self.e.get()),
+            Register::H => Ok(self.h.get()),
+            Register::L => Ok(self.l.get()),
             _r => return Err(EmulateError::RegisterNot8Bit { register }),
         }
     }
@@ -166,16 +164,15 @@ impl I8080 {
     }
 
     fn set_sp(&mut self, value: u16) {
-        self.register_changed(Register::SP);
-        self.sp = value;
+        self.sp.set(value);
     }
 
     pub fn sp(&self) -> u16 {
-        self.sp
+        self.sp.get()
     }
 
     pub fn pc(&self) -> u16 {
-        self.pc
+        self.pc.get()
     }
 
     pub fn flags(&self) -> ConditionalFlags {
@@ -194,18 +191,17 @@ impl I8080 {
     }
 
     fn push_u8<T: Mmu>(&mut self, value: u8, mmu: &mut T) -> Result<()> {
-        let loc = self.sp - 1;
+        let loc = self.sp.get() - 1;
         //if loc < 0x2000 {
         //    return Err(EmulateError::StackOverflow);
         //};
         mmu.write_byte(loc, value);
         self.sp -= 1;
-        self.register_changed(Register::SP);
         Ok(())
     }
 
     fn pop_u8<T: Mmu>(&mut self, mmu: &T) -> Result<u8> {
-        let value = mmu.read_byte(self.sp);
+        let value = mmu.read_byte(self.sp.get());
         self.sp += 1;
         self.register_changed(Register::SP);
         Ok(value)
@@ -217,27 +213,15 @@ impl I8080 {
         Ok(concat_bytes(high, low))
     }
 
-    fn register_changed(&mut self, reg: Register) {
-        match reg {
-            Register::A => self.rc[0] = true,
-            Register::B => self.rc[1] = true,
-            Register::C => self.rc[2] = true,
-            Register::D => self.rc[3] = true,
-            Register::E => self.rc[4] = true,
-            Register::H => self.rc[5] = true,
-            Register::L => self.rc[6] = true,
-            Register::M => {
-                self.rc[5] = true;
-                self.rc[6] = true
-            }
-            Register::SP => self.rc[7] = true,
-        }
-    }
-
     fn reset_rc(&mut self) {
-        for i in self.rc.iter_mut() {
-            *i = false;
-        }
+        self.a.reset_changed();
+        self.b.reset_changed();
+        self.c.reset_changed();
+        self.d.reset_changed();
+        self.e.reset_changed();
+        self.h.reset_changed();
+        self.l.reset_changed();
+        self.sp.reset_changed();
     }
 }
 
@@ -268,43 +252,10 @@ impl TwosComplement for u8 {
 
 impl Display for I8080 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use colored::*;
-        let a = match self.rc[0] {
-            true => format!("{:02x}", self.a).blue(),
-            false => format!("{:02x}", self.a).white(),
-        };
-        let b = match self.rc[1] {
-            true => format!("{:02x}", self.b).blue(),
-            false => format!("{:02x}", self.b).white(),
-        };
-        let c = match self.rc[2] {
-            true => format!("{:02x}", self.c).blue(),
-            false => format!("{:02x}", self.c).white(),
-        };
-        let d = match self.rc[3] {
-            true => format!("{:02x}", self.d).blue(),
-            false => format!("{:02x}", self.d).white(),
-        };
-        let e = match self.rc[4] {
-            true => format!("{:02x}", self.e).blue(),
-            false => format!("{:02x}", self.e).white(),
-        };
-        let h = match self.rc[5] {
-            true => format!("{:02x}", self.h).blue(),
-            false => format!("{:02x}", self.h).white(),
-        };
-        let l = match self.rc[6] {
-            true => format!("{:02x}", self.l).blue(),
-            false => format!("{:02x}", self.l).white(),
-        };
-        let s = match self.rc[7] {
-            true => format!("{:02x}", self.sp).blue(),
-            false => format!("{:02x}", self.sp).white(),
-        };
         write!(
             f,
             "CPU: a={}|b={}|c={}|d={}|e={}|h={}|l={}|sp={}",
-            a, b, c, d, e, h, l, s,
+            self.a, self.b, self.c, self.d, self.e, self.h, self.l, self.sp,
         )
     }
 }

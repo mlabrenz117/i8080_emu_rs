@@ -1,4 +1,52 @@
 use std::fmt::{self, Display};
+use std::ops::{AddAssign, SubAssign};
+
+pub struct Reg<T> {
+    value: T,
+    has_changed: bool,
+}
+
+impl<T: Copy> Reg<T> {
+    pub fn new(value: T) -> Self {
+        Reg {
+            value,
+            has_changed: false,
+        }
+    }
+    pub fn set(&mut self, value: T) {
+        self.value = value;
+        self.has_changed = true;
+    }
+    pub fn get(&self) -> T {
+        self.value
+    }
+    pub fn reset_changed(&mut self) {
+        self.has_changed = false;
+    }
+}
+
+impl<T: Copy> SubAssign<T> for Reg<T> {
+    fn sub_assign(&mut self, other: T) {
+        self.set(other);
+    }
+}
+
+impl<T: Copy> AddAssign<T> for Reg<T> {
+    fn add_assign(&mut self, other: T) {
+        self.set(other);
+    }
+}
+
+impl<T: Display + fmt::LowerHex> Display for Reg<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use colored::*;
+        let repr = match self.has_changed {
+            true => format!("{:02x}", self.value).blue(),
+            false => format!("{:02x}", self.value).white(),
+        };
+        write!(f, "{}", repr)
+    }
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Register {
