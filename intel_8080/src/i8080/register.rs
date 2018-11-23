@@ -1,5 +1,7 @@
 use std::fmt::{self, Display};
-use std::ops::{AddAssign, SubAssign};
+use std::ops::{AddAssign, SubAssign, Deref};
+
+use crate::i8080::TwosComplement;
 
 pub struct Reg<T> {
     value: T,
@@ -17,9 +19,7 @@ impl<T: Copy> Reg<T> {
         self.value = value;
         self.has_changed = true;
     }
-    pub fn get(&self) -> T {
-        self.value
-    }
+    
     pub fn reset_changed(&mut self) {
         self.has_changed = false;
     }
@@ -37,6 +37,13 @@ impl<T: Copy> AddAssign<T> for Reg<T> {
     }
 }
 
+impl<T> Deref for Reg<T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
 impl<T: Display + fmt::LowerHex> Display for Reg<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use colored::*;
@@ -45,6 +52,14 @@ impl<T: Display + fmt::LowerHex> Display for Reg<T> {
             false => format!("{:02x}", self.value).white(),
         };
         write!(f, "{}", repr)
+    }
+}
+
+impl<U, T: TwosComplement<U>> TwosComplement<U> for Reg<T> {
+    type Output = T::Output;
+    
+    fn complement_sub(&self, subtrahend: U) -> Self::Output {
+        self.value.complement_sub(subtrahend)
     }
 }
 

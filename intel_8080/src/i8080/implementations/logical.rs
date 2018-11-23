@@ -45,7 +45,7 @@ impl I8080 {
             Register::M => interconnect.read_byte(self.m()),
             _r => self.get_8bit_register(_r)?,
         };
-        let result = self.a & value;
+        let result = *self.a & value;
         self.flags.set_non_carry_flags(result);
         self.flags.cy = false;
         self.set_8bit_register(Register::A, result);
@@ -63,7 +63,7 @@ impl I8080 {
             Register::M => interconnect.read_byte(self.m()),
             _r => self.get_8bit_register(_r)?,
         };
-        let result = self.a ^ value;
+        let result = *self.a ^ value;
         self.flags.set_non_carry_flags(result);
         self.flags.cy = false;
         self.set_8bit_register(Register::A, result);
@@ -84,7 +84,7 @@ mod tests {
             0xfe, 0x4f, // CPI 0x4f
         ];
         let mut system = Emulator::new(&bytecode);
-        system.cpu.a = 0x5f;
+        system.cpu.a.set(0x5f);
         system.step();
         assert_eq!(system.cpu.flags.z, false);
         assert_eq!(system.cpu.flags.s, true);
@@ -106,16 +106,16 @@ mod tests {
             0xe6, 0x22, // ANI 0x22
         ];
         let mut system = Emulator::new(&bytecode);
-        system.cpu.a = 0x3a;
+        system.cpu.a.set(0x3a);
         system.step();
-        assert_eq!(system.cpu.a, 0x0a);
+        assert_eq!(*system.cpu.a, 0x0a);
         assert_eq!(system.cpu.flags.p, true);
         assert_eq!(system.cpu.flags.z, false);
         assert_eq!(system.cpu.flags.cy, false);
         assert_eq!(system.cpu.flags.s, false);
-        system.cpu.a = 0x69;
+        system.cpu.a.set(0x69);
         system.step();
-        assert_eq!(system.cpu.a, 0x20);
+        assert_eq!(*system.cpu.a, 0x20);
     }
 
     #[test]
@@ -126,17 +126,17 @@ mod tests {
             0xa7, // ANA A
         ];
         let mut system = Emulator::new(&bytecode);
-        system.cpu.a = 0x0a;
-        system.cpu.h = 0x20;
-        system.cpu.l = 0xc5;
+        system.cpu.a.set(0x0a);
+        system.cpu.h.set(0x20);
+        system.cpu.l.set(0xc5);
         system.mmu_mut().write_byte(0x20c5, 0xd4);
         system.step();
-        assert_eq!(system.cpu.a, 0x00);
-        system.cpu.a = 0xff;
+        assert_eq!(*system.cpu.a, 0x00);
+        system.cpu.a.set(0xff);
         system.step();
-        assert_eq!(system.cpu.a, 0xd4);
+        assert_eq!(*system.cpu.a, 0xd4);
         system.step();
-        assert_eq!(system.cpu.a, 0xd4);
+        assert_eq!(*system.cpu.a, 0xd4);
     }
 
     #[test]
@@ -147,15 +147,15 @@ mod tests {
             0xaf, // XRA A
         ];
         let mut system = Emulator::new(&bytecode);
-        system.cpu.a = 0x0a;
-        system.cpu.h = 0x20;
-        system.cpu.l = 0xc5;
+        system.cpu.a.set(0x0a);
+        system.cpu.h.set(0x20);
+        system.cpu.l.set(0xc5);
         system.mmu_mut().write_byte(0x20c5, 0xd4);
         system.step();
-        assert_eq!(system.cpu.a, 0xcf);
+        assert_eq!(*system.cpu.a, 0xcf);
         system.step();
-        assert_eq!(system.cpu.a, 0x1b);
+        assert_eq!(*system.cpu.a, 0x1b);
         system.step();
-        assert_eq!(system.cpu.a, 0x00);
+        assert_eq!(*system.cpu.a, 0x00);
     }
 }

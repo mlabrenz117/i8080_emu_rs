@@ -7,7 +7,7 @@ use crate::{
 impl I8080 {
     pub(crate) fn out<U: IO>(&mut self, data: InstructionData, io: &mut U) -> Result<()> {
         if let Some(port) = data.first() {
-            io.write_port(port, self.a);
+            io.write_port(port, *self.a);
         } else {
             return Err(EmulateError::InvalidInstructionData {
                 opcode: Opcode::OUT,

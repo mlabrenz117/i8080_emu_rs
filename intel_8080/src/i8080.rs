@@ -65,10 +65,10 @@ impl I8080 {
         let mmu = &mut interconnect.mmu;
         let io = &mut interconnect.io;
 
-        let old_pc = self.pc;
+        let old_pc: u16 = self.pc.clone();
         match is_interrupt {
             true => self.interrupts_enabled = false,
-            false => self.pc += instruction.len(),
+            false => self.pc.set(old_pc + instruction.len()),
         }
 
         self.reset_rc();
@@ -140,13 +140,13 @@ impl I8080 {
 
     pub fn get_8bit_register(&self, register: Register) -> Result<u8> {
         match register {
-            Register::A => Ok(self.a.get()),
-            Register::B => Ok(self.b.get()),
-            Register::C => Ok(self.c.get()),
-            Register::D => Ok(self.d.get()),
-            Register::E => Ok(self.e.get()),
-            Register::H => Ok(self.h.get()),
-            Register::L => Ok(self.l.get()),
+            Register::A => Ok(*self.a),
+            Register::B => Ok(*self.b),
+            Register::C => Ok(*self.c),
+            Register::D => Ok(*self.d),
+            Register::E => Ok(*self.e),
+            Register::H => Ok(*self.h),
+            Register::L => Ok(*self.l),
             _r => return Err(EmulateError::RegisterNot8Bit { register }),
         }
     }
@@ -168,11 +168,11 @@ impl I8080 {
     }
 
     pub fn sp(&self) -> u16 {
-        self.sp.get()
+        *self.sp
     }
 
     pub fn pc(&self) -> u16 {
-        self.pc.get()
+        *self.pc
     }
 
     pub fn flags(&self) -> ConditionalFlags {
@@ -191,19 +191,18 @@ impl I8080 {
     }
 
     fn push_u8<T: Mmu>(&mut self, value: u8, mmu: &mut T) -> Result<()> {
-        let loc = self.sp.get() - 1;
+        let loc = *self.sp - 1;
         //if loc < 0x2000 {
         //    return Err(EmulateError::StackOverflow);
         //};
         mmu.write_byte(loc, value);
-        self.sp -= 1;
+        self.sp.set(loc);
         Ok(())
     }
 
     fn pop_u8<T: Mmu>(&mut self, mmu: &T) -> Result<u8> {
-        let value = mmu.read_byte(self.sp.get());
-        self.sp += 1;
-        self.register_changed(Register::SP);
+        let value = mmu.read_byte(*self.sp);
+        self.sp.set(*self.sp + 1);
         Ok(value)
     }
 
@@ -236,14 +235,14 @@ pub(crate) fn concat_bytes(high: u8, low: u8) -> u16 {
     (high as u16) << 8 | (low as u16)
 }
 
-trait TwosComplement<RHS = Self> {
+pub trait TwosComplement<RHS=Self> {
     type Output;
-    fn complement_sub(self, subtrahend: RHS) -> Self::Output;
+    fn complement_sub(&self, subtrahend: RHS) -> Self::Output;
 }
 
 impl TwosComplement for u8 {
     type Output = (u8, bool);
-    fn complement_sub(self, subtrahend: Self) -> Self::Output {
+    fn complement_sub(&self, subtrahend: Self) -> Self::Output {
         let complement = !subtrahend + 1;
         let (value, carry) = self.overflowing_add(complement);
         (value, !carry)

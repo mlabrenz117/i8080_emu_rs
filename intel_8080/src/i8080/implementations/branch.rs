@@ -8,7 +8,7 @@ impl I8080 {
     pub(crate) fn jmp(&mut self, data: InstructionData) -> Result<()> {
         if let (Some(hi), Some(lo)) = data.tuple() {
             let addr = concat_bytes(hi, lo);
-            self.pc = addr;
+            self.pc.set(addr);
         } else {
             return Err(EmulateError::InvalidInstructionData {
                 opcode: Opcode::JMP,
@@ -46,8 +46,8 @@ impl I8080 {
     ) -> Result<()> {
         if let (Some(hi), Some(lo)) = data.tuple() {
             let addr = concat_bytes(hi, lo);
-            self.push_u16(self.pc, interconnect)?;
-            self.pc = addr;
+            self.push_u16(*self.pc, interconnect)?;
+            self.pc.set(addr);
         } else {
             return Err(EmulateError::InvalidInstructionData {
                 opcode: Opcode::CALL,
@@ -59,7 +59,7 @@ impl I8080 {
 
     pub(crate) fn ret<T: Mmu>(&mut self, interconnect: &mut T) -> Result<()> {
         let addr = self.pop_u16(interconnect)?;
-        self.pc = addr;
+        self.pc.set(addr);
         Ok(())
     }
 }
